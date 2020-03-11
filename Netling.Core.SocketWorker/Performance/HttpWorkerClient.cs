@@ -37,7 +37,7 @@ namespace Netling.Core.SocketWorker.Performance
                 _client.Client.IOControl(sioLoopbackFastPath, optionInValue, null);
             }
             catch (Exception) { }
-            
+
             _client.NoDelay = true;
             _client.SendTimeout = 10000;
             _client.ReceiveTimeout = 10000;
@@ -57,7 +57,7 @@ namespace Netling.Core.SocketWorker.Performance
             stream.AuthenticateAsClient(uri.Host, xc, SslProtocols.Tls12, false);
             return stream;
         }
-        
+
         public void Write(ReadOnlySpan<byte> buffer)
         {
             CheckInit();

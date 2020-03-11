@@ -1,17 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
 using CommandLine.Options;
+
 using Netling.Core;
 using Netling.Core.Models;
 using Netling.Core.SocketWorker;
+
+using Newtonsoft.Json;
 
 namespace Netling.ConsoleClient
 {
     class Program
     {
+        private static AuthInfo authInfo = File.Exists(AuthHelper.InputFile) ? JsonConvert.DeserializeObject<AuthInfo>(File.ReadAllText(AuthHelper.InputFile)) : new AuthInfo { ApiScopes = new List<string>(), Endpoints = new List<string>() };
+        private static Dictionary<string, string> _headers = new Dictionary<string, string>();
+
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
@@ -32,6 +41,11 @@ namespace Netling.ConsoleClient
             var url = extraArgs.FirstOrDefault(e => e.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || e.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
             Uri uri = null;
 
+            if (url == null)
+            {
+                url = authInfo.Endpoints.FirstOrDefault();
+            }
+
             if (url != null && !Uri.TryCreate(url, UriKind.Absolute, out uri))
             {
                 Console.WriteLine("Failed to parse URL");
@@ -48,6 +62,8 @@ namespace Netling.ConsoleClient
             {
                 ShowHelp();
             }
+
+            Console.ReadLine();
         }
 
         private static void ShowHelp()
@@ -70,7 +86,8 @@ namespace Netling.ConsoleClient
         private static async Task Run(Uri uri, int threads, TimeSpan duration, int? count)
         {
             WorkerResult result;
-            var worker = new Worker(new SocketWorkerJob(uri, null)); //TODO: Headers
+            await LoadHeaders();
+            var worker = new Worker(new SocketWorkerJob(uri, _headers));
 
             if (count.HasValue)
             {
@@ -119,6 +136,21 @@ namespace Netling.ConsoleClient
             var maxText = string.Format(" {0:0.000} ms", workerResult.Max);
             text += "\r\n" + minText + new string('=', workerResult.Histogram.Length - minText.Length - maxText.Length) + maxText;
             return text;
+        }
+
+        private static async Task LoadHeaders()
+        {
+            _headers.Clear();
+            var traceId = Guid.NewGuid().ToString();
+            Console.WriteLine($"{nameof(traceId)}: {traceId}");
+            if (!string.IsNullOrWhiteSpace(authInfo.UserId) && !string.IsNullOrWhiteSpace(authInfo.Password))
+            {
+                var token = await AuthHelper.GetAuthTokenSilentAsync(authInfo);
+                _headers.Add("Authorization", "Bearer " + token);
+            }
+
+            _headers.Add("Request_Id", traceId);
+            _headers.Add("operation_Id", traceId);
         }
 
         private const string HelpString = @"

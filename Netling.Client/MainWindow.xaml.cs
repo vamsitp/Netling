@@ -2,14 +2,19 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+
 using Netling.Core;
 using Netling.Core.Models;
 using Netling.Core.SocketWorker;
+
+using Newtonsoft.Json;
 
 namespace Netling.Client
 {
@@ -20,17 +25,20 @@ namespace Netling.Client
         private Task<WorkerResult> _task;
         private List<ResultWindow> _resultWindows;
         private ResultWindowItem _baselineResult;
-
+        private Dictionary<string, string> _headers;
 
         public MainWindow()
         {
             _resultWindows = new List<ResultWindow>();
+            _headers = new Dictionary<string, string>();
             InitializeComponent();
             Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en");
             Thread.CurrentThread.CurrentCulture.NumberFormat.NumberGroupSeparator = " ";
             Loaded += OnLoaded;
         }
+
+        private AuthInfo authInfo = File.Exists(AuthHelper.InputFile) ? JsonConvert.DeserializeObject<AuthInfo>(File.ReadAllText(AuthHelper.InputFile)) : new AuthInfo { ApiScopes = new List<string>(), Endpoints = new List<string>() };
 
         private void OnLoaded(object sender, RoutedEventArgs routedEventArgs)
         {
@@ -48,6 +56,7 @@ namespace Netling.Client
             }
 
             Threads.SelectedIndex = 0;
+            LoadInput();
             Url.Focus();
         }
 
@@ -124,10 +133,12 @@ namespace Netling.Client
                 _cancellationTokenSource = new CancellationTokenSource();
                 var cancellationToken = _cancellationTokenSource.Token;
 
+                await LoadHeaders();
+
                 StatusProgressbar.Value = 0;
                 StatusProgressbar.Visibility = Visibility.Visible;
 
-                var worker = new Worker(new SocketWorkerJob(uri, null)); //TODO: Headers
+                var worker = new Worker(new SocketWorkerJob(uri, _headers));
 
                 if (count.HasValue)
                 {
@@ -229,6 +240,49 @@ namespace Netling.Client
                     resultWindow.ClearBaseline();
                 }
             }
+        }
+
+        private void ClearHeaders_Click(object sender, RoutedEventArgs e)
+        {
+            LoadInput(true);
+        }
+
+        private async Task LoadHeaders()
+        {
+            SaveInput();
+            _headers.Clear();
+            this.TraceId.Text = Guid.NewGuid().ToString();
+            Debug.WriteLine($"{nameof(this.TraceId)}: {this.TraceId.Text}");
+            if (!string.IsNullOrWhiteSpace(this.authInfo.UserId) && !string.IsNullOrWhiteSpace(this.authInfo.Password))
+            {
+                var token = await AuthHelper.GetAuthTokenSilentAsync(this.authInfo);
+                _headers.Add("Authorization", "Bearer " + token);
+            }
+
+            _headers.Add("Request_Id", this.TraceId.Text);
+            _headers.Add("operation_Id", this.TraceId.Text);
+        }
+
+        private void LoadInput(bool clear = false)
+        {
+            this.Url.Text = clear ? string.Empty : this.authInfo.Endpoints.FirstOrDefault();
+            this.Authority.Text = clear ? string.Empty : this.authInfo.Authority;
+            this.ClientId.Text = clear ? string.Empty : this.authInfo.ClientId;
+            this.ApiScopes.Text = clear ? string.Empty : string.Join(',', this.authInfo.ApiScopes);
+            this.UserId.Text = clear ? string.Empty : this.authInfo.UserId;
+            this.Password.Password = clear ? string.Empty : this.authInfo.Password;
+        }
+
+        private void SaveInput()
+        {
+            this.authInfo.Endpoints = this.Url.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            this.authInfo.Authority = this.Authority.Text;
+            this.authInfo.ClientId = this.ClientId.Text;
+            this.authInfo.ApiScopes = this.ApiScopes.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            this.authInfo.UserId = this.UserId.Text;
+            this.authInfo.Password = this.Password.Password;
+
+            File.WriteAllText(AuthHelper.InputFile, JsonConvert.SerializeObject(this.authInfo));
         }
     }
 }
