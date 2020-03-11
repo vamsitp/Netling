@@ -144,16 +144,11 @@ namespace Netling.ConsoleClient
         private static async Task LoadHeaders()
         {
             _headers.Clear();
-            var traceId = Guid.NewGuid().ToString();
-            Console.WriteLine($"{nameof(traceId)}: {traceId}");
             if (!string.IsNullOrWhiteSpace(authInfo.UserId) && !string.IsNullOrWhiteSpace(authInfo.Password))
             {
                 var token = await AuthHelper.GetAuthTokenSilentAsync(authInfo);
                 _headers.Add("Authorization", "Bearer " + token);
             }
-
-            _headers.Add("Request_Id", traceId);
-            _headers.Add("operation_Id", traceId);
         }
 
         private const string HelpString = @"

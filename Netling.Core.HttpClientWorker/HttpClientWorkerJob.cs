@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-
+using Netling.Core.Extensions;
 using Netling.Core.Models;
 
 namespace Netling.Core.HttpClientWorker
@@ -42,15 +42,7 @@ namespace Netling.Core.HttpClientWorker
         public async ValueTask DoWork()
         {
             _localStopwatch.Restart();
-            _httpClient.DefaultRequestHeaders.Clear();
-            if (_headers?.Any() == true)
-            {
-                foreach (var header in _headers)
-                {
-                    _httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
-                }
-            }
-
+            SetHeaders();
             using (var response = await _httpClient.GetAsync(_uri))
             {
                 var contentStream = await response.Content.ReadAsStreamAsync();
@@ -66,6 +58,16 @@ namespace Netling.Core.HttpClientWorker
                 {
                     _workerThreadResult.AddError((int)_stopwatch.ElapsedMilliseconds / 1000, responseTime, statusCode, _index < 10);
                 }
+            }
+        }
+
+        private void SetHeaders()
+        {
+            _httpClient.DefaultRequestHeaders.Clear();
+            _headers.AddTraceId();
+            foreach (var header in _headers)
+            {
+                _httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
         }
 

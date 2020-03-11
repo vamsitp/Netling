@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 
 using Netling.Core.Exceptions;
+using Netling.Core.Extensions;
 
 namespace Netling.Core.SocketWorker.Performance
 {
@@ -19,6 +20,13 @@ namespace Netling.Core.SocketWorker.Performance
             _buffer = new Memory<byte>(new byte[8192]);
             var headersString = string.Empty;
             var contentLength = data?.Length ?? 0;
+
+            if (headers == null)
+            {
+                headers = new Dictionary<string, string>();
+            }
+
+            headers.AddTraceId();
 
             if (headers != null && headers.Any())
             {

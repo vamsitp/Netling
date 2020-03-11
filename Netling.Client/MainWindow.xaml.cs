@@ -253,16 +253,11 @@ namespace Netling.Client
         {
             SaveInput();
             _headers.Clear();
-            this.TraceId.Text = Guid.NewGuid().ToString();
-            Debug.WriteLine($"{nameof(this.TraceId)}: {this.TraceId.Text}");
             if (!string.IsNullOrWhiteSpace(this.authInfo.UserId) && !string.IsNullOrWhiteSpace(this.authInfo.Password))
             {
                 var token = await AuthHelper.GetAuthTokenSilentAsync(this.authInfo);
                 _headers.Add("Authorization", "Bearer " + token);
             }
-
-            _headers.Add("Request_Id", this.TraceId.Text);
-            _headers.Add("operation_Id", this.TraceId.Text);
         }
 
         private void LoadInput(bool clear = false)
