@@ -101,7 +101,7 @@ namespace Netling.Core
                     workerThreadResult.AddError((int)sw.ElapsedMilliseconds / 1000, 0, 0, false, ex);
                 }
             }
-            
+
             results.Enqueue(job.GetResults());
             resetEvent.Set();
         }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 using Netling.Core.Exceptions;
 using Netling.Core.Extensions;
@@ -14,6 +15,8 @@ namespace Netling.Core.SocketWorker.Performance
         private readonly ReadOnlyMemory<byte> _request;
         private readonly Memory<byte> _buffer;
 
+        private static readonly SemaphoreSlim Lock = new SemaphoreSlim(1, 1);
+
         public HttpWorker(IHttpWorkerClient client, Uri uri, Dictionary<string, string> headers, HttpMethod httpMethod = HttpMethod.Get, byte[] data = null)
         {
             _client = client;
@@ -21,6 +24,7 @@ namespace Netling.Core.SocketWorker.Performance
             var headersString = string.Empty;
             var contentLength = data?.Length ?? 0;
 
+            Lock.Wait();
             if (headers == null)
             {
                 headers = new Dictionary<string, string>();
@@ -32,6 +36,8 @@ namespace Netling.Core.SocketWorker.Performance
             {
                 headersString = string.Concat(headers.Select(h => "\r\n" + h.Key.Trim() + ": " + h.Value.Trim()));
             }
+
+            Lock.Release();
 
             var request = Encoding.UTF8.GetBytes($"{httpMethod.ToString().ToUpper()} {uri.PathAndQuery} HTTP/1.1\r\nAccept-Encoding: gzip, deflate, sdch\r\nHost: {uri.Host}\r\nContent-Length: {contentLength}{headersString}\r\n\r\n");
 

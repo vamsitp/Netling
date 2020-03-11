@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
+
 using Netling.Core.Extensions;
 using Netling.Core.Models;
 
@@ -18,6 +19,8 @@ namespace Netling.Core.HttpClientWorker
         private readonly WorkerThreadResult _workerThreadResult;
         private readonly Dictionary<string, string> _headers;
         private readonly HttpClient _httpClient;
+
+        private static readonly SemaphoreSlim Lock = new SemaphoreSlim(1, 1);
 
         // Used to approximately calculate bandwidth
         private static readonly int MissingHeaderLength = "HTTP/1.1 200 OK\r\nContent-Length: 123\r\nContent-Type: text/plain\r\n\r\n".Length;
@@ -42,7 +45,7 @@ namespace Netling.Core.HttpClientWorker
         public async ValueTask DoWork()
         {
             _localStopwatch.Restart();
-            SetHeaders();
+            await SetHeaders();
             using (var response = await _httpClient.GetAsync(_uri))
             {
                 var contentStream = await response.Content.ReadAsStreamAsync();
@@ -61,14 +64,18 @@ namespace Netling.Core.HttpClientWorker
             }
         }
 
-        private void SetHeaders()
+        private async Task SetHeaders()
         {
+            await Lock.WaitAsync();
+
             _httpClient.DefaultRequestHeaders.Clear();
             _headers.AddTraceId();
             foreach (var header in _headers)
             {
                 _httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
+
+            Lock.Release();
         }
 
         public WorkerThreadResult GetResults()
