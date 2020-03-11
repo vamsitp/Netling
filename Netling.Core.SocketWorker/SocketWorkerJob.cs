@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+
 using Netling.Core.Models;
 using Netling.Core.SocketWorker.Performance;
 
@@ -13,21 +15,24 @@ namespace Netling.Core.SocketWorker
         private readonly Stopwatch _stopwatch;
         private readonly Stopwatch _localStopwatch;
         private readonly WorkerThreadResult _workerThreadResult;
+        private readonly Dictionary<string, string> _headers;
         private readonly HttpWorker _httpWorker;
 
-        public SocketWorkerJob(Uri uri)
+        public SocketWorkerJob(Uri uri, Dictionary<string, string> headers)
         {
             _uri = uri;
+            _headers = headers;
         }
 
-        private SocketWorkerJob(int index, Uri uri, WorkerThreadResult workerThreadResult)
+        private SocketWorkerJob(int index, Uri uri, Dictionary<string, string> headers, WorkerThreadResult workerThreadResult)
         {
             _index = index;
             _uri = uri;
+            _headers = headers;
             _stopwatch = Stopwatch.StartNew();
             _localStopwatch = new Stopwatch();
             _workerThreadResult = workerThreadResult;
-            _httpWorker = new HttpWorker(new HttpWorkerClient(uri), uri);
+            _httpWorker = new HttpWorker(new HttpWorkerClient(uri), uri, headers);
         }
 
         public ValueTask DoWork()
@@ -54,7 +59,7 @@ namespace Netling.Core.SocketWorker
 
         public ValueTask<IWorkerJob> Init(int index, WorkerThreadResult workerThreadResult)
         {
-            return new ValueTask<IWorkerJob>(new SocketWorkerJob(index, _uri, workerThreadResult));
+            return new ValueTask<IWorkerJob>(new SocketWorkerJob(index, _uri, _headers, workerThreadResult));
         }
     }
 }

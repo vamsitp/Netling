@@ -127,7 +127,7 @@ namespace Netling.Client
                 StatusProgressbar.Value = 0;
                 StatusProgressbar.Visibility = Visibility.Visible;
 
-                var worker = new Worker(new SocketWorkerJob(uri));
+                var worker = new Worker(new SocketWorkerJob(uri, null)); //TODO: Headers
 
                 if (count.HasValue)
                 {

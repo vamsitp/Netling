@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+
 using Netling.Core.Exceptions;
 
 namespace Netling.Core.SocketWorker.Performance
@@ -12,7 +13,7 @@ namespace Netling.Core.SocketWorker.Performance
         private readonly ReadOnlyMemory<byte> _request;
         private readonly Memory<byte> _buffer;
 
-        public HttpWorker(IHttpWorkerClient client, Uri uri, HttpMethod httpMethod = HttpMethod.Get, Dictionary<string, string> headers = null, byte[] data = null)
+        public HttpWorker(IHttpWorkerClient client, Uri uri, Dictionary<string, string> headers, HttpMethod httpMethod = HttpMethod.Get, byte[] data = null)
         {
             _client = client;
             _buffer = new Memory<byte>(new byte[8192]);
@@ -61,10 +62,10 @@ namespace Netling.Core.SocketWorker.Performance
                 {
                     length += _client.Read(_buffer);
                 }
-                
+
                 return (length, statusCode);
             }
-            
+
             if (responseType == ResponseType.Chunked)
             {
                 while (!HttpHelperChunked.IsEndOfChunkedStream(_buffer.Span.Slice(0, read)))
@@ -75,7 +76,7 @@ namespace Netling.Core.SocketWorker.Performance
 
                 return (length, statusCode);
             }
-            
+
             throw new UnknownResponseTypeException();
         }
 

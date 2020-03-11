@@ -70,7 +70,7 @@ namespace Netling.ConsoleClient
         private static async Task Run(Uri uri, int threads, TimeSpan duration, int? count)
         {
             WorkerResult result;
-            var worker = new Worker(new SocketWorkerJob(uri));
+            var worker = new Worker(new SocketWorkerJob(uri, null)); //TODO: Headers
 
             if (count.HasValue)
             {
@@ -81,11 +81,11 @@ namespace Netling.ConsoleClient
                 result = await worker.Run(uri.ToString(), threads, duration, new CancellationToken());
             }
 
-            Console.WriteLine(ResultString, 
+            Console.WriteLine(ResultString,
                 result.Count,
                 result.Elapsed.TotalSeconds,
-                result.RequestsPerSecond, 
-                result.Bandwidth, 
+                result.RequestsPerSecond,
+                result.Bandwidth,
                 result.Errors,
                 result.Median,
                 result.StdDev,
