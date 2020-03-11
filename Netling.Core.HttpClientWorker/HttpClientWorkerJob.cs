@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -41,6 +42,15 @@ namespace Netling.Core.HttpClientWorker
         public async ValueTask DoWork()
         {
             _localStopwatch.Restart();
+            _httpClient.DefaultRequestHeaders.Clear();
+            if (_headers?.Any() == true)
+            {
+                foreach (var header in _headers)
+                {
+                    _httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                }
+            }
+
             using (var response = await _httpClient.GetAsync(_uri))
             {
                 var contentStream = await response.Content.ReadAsStreamAsync();

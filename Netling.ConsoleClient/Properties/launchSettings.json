@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Netling.ConsoleClient": {
-      "commandName": "Project",
-      "commandLineArgs": "-t 8 -d 60"
+      "commandName": "Project"
     }
   }
 }

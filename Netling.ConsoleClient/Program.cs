@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using CommandLine.Options;
 
 using Netling.Core;
+using Netling.Core.HttpClientWorker;
 using Netling.Core.Models;
 using Netling.Core.SocketWorker;
 
@@ -28,7 +29,7 @@ namespace Netling.ConsoleClient
             Thread.CurrentThread.CurrentUICulture = new CultureInfo("en");
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en");
 
-            var threads = 1;
+            var threads = 8;
             var duration = 10;
             int? count = null;
 
@@ -89,7 +90,7 @@ namespace Netling.ConsoleClient
         {
             WorkerResult result;
             await LoadHeaders();
-            var worker = new Worker(new SocketWorkerJob(uri, _headers));
+            var worker = new Worker(new HttpClientWorkerJob(uri, _headers)); // SocketWorkerJob
 
             if (count.HasValue)
             {

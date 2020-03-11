@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 using Netling.Core;
+using Netling.Core.HttpClientWorker;
 using Netling.Core.Models;
 using Netling.Core.SocketWorker;
 
@@ -55,7 +56,8 @@ namespace Netling.Client
                 Threads.Items.Add(new KeyValuePair<int, string>(Environment.ProcessorCount * i, $"{Environment.ProcessorCount * i} - ({i} per core)"));
             }
 
-            Threads.SelectedIndex = 0;
+            Threads.SelectedIndex = 7;
+            Duration.SelectedIndex = 0;
             LoadInput();
             Url.Focus();
         }
@@ -138,7 +140,7 @@ namespace Netling.Client
                 StatusProgressbar.Value = 0;
                 StatusProgressbar.Visibility = Visibility.Visible;
 
-                var worker = new Worker(new SocketWorkerJob(uri, _headers));
+                var worker = new Worker(new HttpClientWorkerJob(uri, _headers)); // SocketWorkerJob
 
                 if (count.HasValue)
                 {
